@@ -31,8 +31,10 @@ VOLUME $JENKINS_HOME
 RUN mkdir -p /usr/share/jenkins/ref/init.groovy.d
 
 # Use tini as subreaper in Docker container to adopt zombie processes
-ARG TINI_VERSION=v0.16.1
+ARG TINI_VERSION=v0.18.0
+
 COPY tini_pub.gpg ${JENKINS_HOME}/tini_pub.gpg
+
 RUN curl -fsSL https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-static-arm64 -o /sbin/tini \
   && curl -fsSL https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-static-arm64.asc -o /sbin/tini.asc \
   && gpg --import ${JENKINS_HOME}/tini_pub.gpg \
