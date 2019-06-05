@@ -5,9 +5,7 @@ properties([
     pipelineTriggers([cron('H H/6 * * *')]),
 ])
 
-timeout(20) {
-
-node('docker') {
+nodeWithTimeout('docker') {
     deleteDir()
 
     stage('Checkout') {
@@ -26,18 +24,14 @@ node('docker') {
          * the Dockerfile in this repository, but not publishing to docker hub
          */
         stage('Build') {
-            docker.build('jenkins')
-            docker.build('jenkins:alpine', '--file Dockerfile-alpine .')
+            sh 'make build'
         }
 
-        stage('Test') {
-            sh """
-            git submodule update --init --recursive
-            git clone https://github.com/sstephenson/bats.git
-            """
+        stage('Prepare Test') {
+            sh "make prepare-test"
         }
 
-        def labels = ['debian', 'slim', 'alpine']
+        def labels = ['debian', 'slim', 'alpine', 'jdk11']
         def builders = [:]
         for (x in labels) {
             def label = x
@@ -45,26 +39,37 @@ node('docker') {
             // Create a map to pass in to the 'parallel' step so we can fire all the builds at once
             builders[label] = {
                 stage("Test ${label}") {
-                    def dockerfile = label == 'debian' ? 'Dockerfile' : "Dockerfile-${label}"
-                    sh "DOCKERFILE=${dockerfile} bats/bin/bats tests"
+                    sh "make test-$label"
                 }
             }
         }
 
         parallel builders
-
+        
+        def branchName = "${env.BRANCH_NAME}"
+        if (branchName ==~ 'master'){
+            stage('Publish Experimental') {
+                infra.withDockerCredentials {
+                    sh 'make publish-experimental'
+                }
+            }                 
+        }
     } else {
         /* In our trusted.ci environment we only want to be publishing our
          * containers from artifacts
          */
         stage('Publish') {
             infra.withDockerCredentials {
-                sh './publish.sh'
-                sh './publish.sh --variant alpine'
-                sh './publish.sh --variant slim'
+                sh 'make publish'
             }
         }
     }
 }
 
+void nodeWithTimeout(String label, def body) {
+    timeout(time: 40, unit: 'MINUTES') {
+        node(label) {
+            body.call()
+        }
+    }
 }

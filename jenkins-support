@@ -55,9 +55,15 @@ copy_reference_file() {
         if [[ -e $JENKINS_HOME/${version_marker} ]]; then
             marker_version=$(cat "$JENKINS_HOME/${version_marker}")
             if versionLT "$marker_version" "$container_version"; then
-                action="SKIPPED"
-                reason="Installed version ($container_version) has been manually upgraded from initial version ($marker_version)"
-                log=true
+                if ( versionLT "$container_version" "$image_version" && [[ -n $PLUGINS_FORCE_UPGRADE ]]); then
+                    action="UPGRADED"
+                    reason="Manually upgraded version ($container_version) is older than image version $image_version"
+                    log=true
+                else
+                    action="SKIPPED"
+                    reason="Installed version ($container_version) has been manually upgraded from initial version ($marker_version)"
+                    log=true
+                fi
             else
                 if [[ "$image_version" == "$container_version" ]]; then
                     action="SKIPPED"
@@ -132,7 +138,7 @@ copy_reference_file() {
 # timeout is given by TIMEOUT in seconds (default 1.)
 #
 function retry_command() {
-  local max_attempts=${ATTEMPTS-60}
+  local max_attempts=${ATTEMPTS-3}
   local timeout=${TIMEOUT-1}
   local success_timeout=${SUCCESS_TIMEOUT-1}
   local max_success_attempt=${SUCCESS_ATTEMPTS-1}
