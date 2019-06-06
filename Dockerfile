@@ -1,4 +1,4 @@
-FROM arm64v8/openjdk:8-jdk
+FROM arm64v8/openjdk:8-jdk-slim
 
 RUN apt-get update && apt-get upgrade -y && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
 
