@@ -1,6 +1,6 @@
 FROM arm64v8/openjdk:8-jdk-alpine
 
-RUN apk add --no-cache git openssh-client curl unzip bash ttf-dejavu coreutils gnupg docker
+RUN apk add --no-cache git openssh-client curl unzip bash ttf-dejavu coreutils tini gnupg docker
 
 ARG user=jenkins
 ARG group=jenkins

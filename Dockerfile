@@ -1,6 +1,6 @@
-FROM arm64v8/openjdk:8-jdk-slim
+FROM arm64v8/openjdk:8-jdk
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get upgrade -y && apt-get install -y git curl software-properties-common apt-transport-https ca-certificates && rm -rf /var/lib/apt/lists/*
 
 ARG user=jenkins
 ARG group=jenkins
@@ -12,6 +12,14 @@ ARG JENKINS_HOME=/var/jenkins_home
 
 ENV JENKINS_HOME $JENKINS_HOME
 ENV JENKINS_SLAVE_AGENT_PORT ${agent_port}
+
+
+# install docker
+#ARG DOCKER_V=17.12.1~ce-0~debian
+ARG DOCKER_V=18.06.1~ce~3-0~debian
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
+RUN add-apt-repository "deb [arch=arm64] https://download.docker.com/linux/debian stretch stable"
+RUN apt-get update && apt-cache madison docker-ce && apt-get install -y --allow-downgrades docker-ce=$DOCKER_V
 
 # Jenkins is run with user `jenkins`, uid = 1000
 # If you bind mount a volume from the host or a data container,
