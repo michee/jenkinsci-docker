@@ -18,11 +18,11 @@ ENV JENKINS_SLAVE_AGENT_PORT ${agent_port}
 
 # install docker
 #ARG DOCKER_V=17.12.1~ce-0~debian
-#ARG DOCKER_V=18.06.1~ce~3-0~debian
+ARG DOCKER_V=18.06.1~ce~3-0~debian
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
     && add-apt-repository "deb [arch=arm64] https://download.docker.com/linux/debian stretch stable" \
     && apt-get update \
-    && apt-get install -y docker-ce docker-ce-cli containerd.io \
+    && apt-get install -y docker-ce=$DOCKER_V containerd.io \
     && rm -rf /var/lib/apt/lists/*
 #RUN apt-get update && apt-get install -y docker-ce=$DOCKER_V docker-ce-cli=$DOCKER_V containerd.io
 
@@ -32,7 +32,9 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
 RUN mkdir -p $JENKINS_HOME \
   && chown ${uid}:${gid} $JENKINS_HOME \
   && groupadd -g ${gid} ${group} \
-  && useradd -d "$JENKINS_HOME" -u ${uid} -g ${gid} -m -s /bin/bash ${user}
+  && useradd -d "$JENKINS_HOME" -u ${uid} -g ${gid} -m -s /bin/bash ${user} \
+  && usermod -a -G docker ${user}
+
 
 # Jenkins home directory is a volume, so configuration and build history
 # can be persisted and survive image upgrades
@@ -90,8 +92,6 @@ COPY jenkins.sh /usr/local/bin/jenkins.sh
 COPY tini-shim.sh /bin/tini
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/jenkins.sh"]
 
-# start docker deamon 
-CMD systemctl start docker
 
 # from a derived Dockerfile, can use `RUN plugins.sh active.txt` to setup /usr/share/jenkins/ref/plugins from a support bundle
 COPY plugins.sh /usr/local/bin/plugins.sh
